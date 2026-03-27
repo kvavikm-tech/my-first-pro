@@ -1,0 +1,15 @@
+[
+  {
+    "id": 1,
+    "text": "Buy milk",
+    "done": true,
+    "createdAt": "2026-03-27T13:27:21.730Z",
+    "completedAt": "2026-03-27T13:27:21.933Z"
+  },
+  {
+    "id": 2,
+    "text": "Buy milk",
+    "done": false,
+    "createdAt": "2026-03-27T13:36:42.059Z"
+  }
+]
