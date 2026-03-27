@@ -7,7 +7,11 @@
     "start": "node app.js",
     "add": "node app.js add",
     "list": "node app.js list",
-    "done": "node app.js done"
+    "done": "node app.js done",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   },
   "author": "Martinus",
   "license": "MIT"
