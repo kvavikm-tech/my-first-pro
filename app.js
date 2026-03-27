@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+const { addTask, listTasks, completeTask } = require('./lib/taskManager');
+
+const argv = process.argv.slice(2);
+const command = argv[0];
+
+function printHelp() {
+  console.log('CLI Task Manager');
+  console.log('Usage: node app.js <command> [args]');
+  console.log('Commands:');
+  console.log('  add "task text"       Add a new task');
+  console.log('  list                   List all tasks');
+  console.log('  done <id>              Mark task as done');
+  console.log('  help                   Show this help message');
+}
+
+function formatTask(task) {
+  const status = task.done ? '[x]' : '[ ]';
+  return `${task.id}. ${status} ${task.text}`;
+}
+
+async function main() {
+  try {
+    switch (command) {
+      case 'add': {
+        const text = argv.slice(1).join(' ').trim();
+        if (!text) {
+          console.error('Error: task text is required.');
+          printHelp();
+          process.exit(1);
+        }
+        const task = addTask(text);
+        console.log(`Task added: ${task.id}. ${task.text}`);
+        break;
+      }
+      case 'list': {
+        const tasks = listTasks();
+        if (tasks.length === 0) {
+          console.log('No tasks yet. Add one with: node app.js add "Buy milk"');
+          break;
+        }
+        tasks.forEach((task) => {
+          console.log(formatTask(task));
+        });
+        break;
+      }
+      case 'done': {
+        const id = argv[1];
+        if (!id) {
+          console.error('Error: task id is required.');
+          printHelp();
+          process.exit(1);
+        }
+        const task = completeTask(id);
+        console.log(`Task marked done: ${task.id}. ${task.text}`);
+        break;
+      }
+      case 'help':
+      case undefined:
+      case '':
+        printHelp();
+        break;
+      default:
+        console.error(`Unknown command: ${command}`);
+        printHelp();
+        process.exit(1);
+    }
+  } catch (err) {
+    console.error(`Error: ${err.message}`);
+    process.exit(1);
+  }
+}
+
+main();

@@ -1,0 +1,14 @@
+{
+  "name": "my-first-pro-cli-task-manager",
+  "version": "1.0.0",
+  "description": "Simple CLI task manager",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "add": "node app.js add",
+    "list": "node app.js list",
+    "done": "node app.js done"
+  },
+  "author": "Martinus",
+  "license": "MIT"
+}
