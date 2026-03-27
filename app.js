@@ -14,6 +14,14 @@ function printHelp() {
   console.log('  help                   Show this help message');
 }
 
+function validateId(id) {
+  const num = Number(id);
+  if (!Number.isInteger(num) || num <= 0) {
+    throw new Error('Task ID must be a positive integer');
+  }
+  return num;
+}
+
 function formatTask(task) {
   const status = task.done ? '[x]' : '[ ]';
   return `${task.id}. ${status} ${task.text}`;
@@ -51,8 +59,13 @@ async function main() {
           printHelp();
           process.exit(1);
         }
-        const task = completeTask(id);
-        console.log(`Task marked done: ${task.id}. ${task.text}`);
+        const tid = validateId(id);
+        const result = completeTask(tid);
+        if (result.wasCompleted) {
+          console.log(`Task marked done: ${result.task.id}. ${result.task.text}`);
+        } else {
+          console.log(`Task ${result.task.id} is already marked as done.`);
+        }
         break;
       }
       case 'help':
