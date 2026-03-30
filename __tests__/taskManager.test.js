@@ -1,4 +1,4 @@
-const { addTask, listTasks, completeTask, readTasks } = require('../lib/taskManager');
+const { addTask, listTasks, completeTask, deleteTask, editTask, readTasks } = require('../lib/taskManager');
 const fs = require('fs');
 const path = require('path');
 
@@ -75,5 +75,36 @@ describe('Task Manager', () => {
     fs.writeFileSync(TEST_DATA_FILE, '{"not": "array"}');
     const tasks = readTasks();
     expect(tasks).toEqual([]);
+  });
+
+  test('deleteTask should remove a task', () => {
+    const added = addTask('Delete me');
+    const deleted = deleteTask(added.id);
+    expect(deleted.id).toBe(added.id);
+    expect(deleted.text).toBe('Delete me');
+    const remaining = listTasks();
+    expect(remaining).toHaveLength(0);
+  });
+
+  test('deleteTask should throw error for non-existent task', () => {
+    expect(() => deleteTask(999)).toThrow('Task with ID 999 not found');
+  });
+
+  test('editTask should update task text', () => {
+    const added = addTask('Original text');
+    const edited = editTask(added.id, 'Updated text');
+    expect(edited.id).toBe(added.id);
+    expect(edited.text).toBe('Updated text');
+    expect(edited).toHaveProperty('updatedAt');
+  });
+
+  test('editTask should throw error for empty text', () => {
+    const added = addTask('Task');
+    expect(() => editTask(added.id, '')).toThrow('Task text is required');
+    expect(() => editTask(added.id, '   ')).toThrow('Task text is required');
+  });
+
+  test('editTask should throw error for non-existent task', () => {
+    expect(() => editTask(999, 'New text')).toThrow('Task with ID 999 not found');
   });
 });
