@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { addTask, listTasks, completeTask } = require('./lib/taskManager');
+const { addTask, listTasks, completeTask, deleteTask, editTask } = require('./lib/taskManager');
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -11,6 +11,8 @@ function printHelp() {
   console.log('  add "task text"       Add a new task');
   console.log('  list                   List all tasks');
   console.log('  done <id>              Mark task as done');
+  console.log('  delete <id>            Delete a task');
+  console.log('  edit <id> "new text"   Edit task description');
   console.log('  help                   Show this help message');
 }
 
@@ -66,6 +68,36 @@ async function main() {
         } else {
           console.log(`Task ${result.task.id} is already marked as done.`);
         }
+        break;
+      }
+      case 'delete': {
+        const id = argv[1];
+        if (!id) {
+          console.error('Error: task id is required.');
+          printHelp();
+          process.exit(1);
+        }
+        const tid = validateId(id);
+        const task = deleteTask(tid);
+        console.log(`Task deleted: ${task.id}. ${task.text}`);
+        break;
+      }
+      case 'edit': {
+        const id = argv[1];
+        const text = argv.slice(2).join(' ').trim();
+        if (!id) {
+          console.error('Error: task id is required.');
+          printHelp();
+          process.exit(1);
+        }
+        if (!text) {
+          console.error('Error: task text is required.');
+          printHelp();
+          process.exit(1);
+        }
+        const tid = validateId(id);
+        const task = editTask(tid, text);
+        console.log(`Task updated: ${task.id}. ${task.text}`);
         break;
       }
       case 'help':
