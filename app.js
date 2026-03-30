@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { addTask, listTasks, completeTask, deleteTask, editTask } = require('./lib/taskManager');
+const { addTask, listTasks, completeTask, deleteTask, editTask, exportTasks, importTasks, listBackups, restoreFromBackup } = require('./lib/taskManager');
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -13,6 +13,13 @@ function printHelp() {
   console.log('  done <id>              Mark task as done');
   console.log('  delete <id>            Delete a task');
   console.log('  edit <id> "new text"   Edit task description');
+  console.log('');
+  console.log('Backup & Export:');
+  console.log('  export [filename]      Export tasks to a file (auto-backup if not specified)');
+  console.log('  import <filename>      Import tasks from a file');
+  console.log('  backups                List available backup files');
+  console.log('  restore <filename>     Restore tasks from a backup');
+  console.log('');
   console.log('  help                   Show this help message');
 }
 
@@ -98,6 +105,46 @@ async function main() {
         const tid = validateId(id);
         const task = editTask(tid, text);
         console.log(`Task updated: ${task.id}. ${task.text}`);
+        break;
+      }
+      case 'export': {
+        const filename = argv[1] || `tasks-export-${new Date().toISOString().split('T')[0]}.json`;
+        const result = exportTasks(filename);
+        console.log(`Exported ${result.taskCount} tasks to: ${result.filename}`);
+        break;
+      }
+      case 'import': {
+        const filename = argv[1];
+        if (!filename) {
+          console.error('Error: filename is required.');
+          printHelp();
+          process.exit(1);
+        }
+        const result = importTasks(filename);
+        console.log(`Imported ${result.taskCount} tasks from: ${result.filename}`);
+        break;
+      }
+      case 'backups': {
+        const backups = listBackups();
+        if (backups.length === 0) {
+          console.log('No backups found.');
+          break;
+        }
+        console.log('Available backups:');
+        backups.forEach((backup, idx) => {
+          console.log(`  ${idx + 1}. ${backup}`);
+        });
+        break;
+      }
+      case 'restore': {
+        const filename = argv[1];
+        if (!filename) {
+          console.error('Error: backup filename is required.');
+          console.log('Use "node app.js backups" to see available backups.');
+          process.exit(1);
+        }
+        const result = restoreFromBackup(filename);
+        console.log(`Restored ${result.taskCount} tasks from: ${result.filename}`);
         break;
       }
       case 'help':
