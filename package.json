@@ -10,6 +10,9 @@
     "done": "node app.js done",
     "test": "jest"
   },
+  "dependencies": {
+    "sql.js": "^1.10.0"
+  },
   "devDependencies": {
     "jest": "^29.7.0"
   },

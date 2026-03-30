@@ -1,26 +1,32 @@
-const { addTask, listTasks, completeTask, deleteTask, editTask, readTasks, exportTasks, importTasks, listBackups, restoreFromBackup } = require('../lib/taskManager');
+const { addTask, listTasks, completeTask, deleteTask, editTask, exportTasks, importTasks, listBackups, restoreFromBackup } = require('../lib/taskManager');
+const { initDatabase, resetDatabase } = require('../lib/database');
 const fs = require('fs');
 const path = require('path');
 
-const TEST_DATA_FILE = path.resolve(__dirname, '..', 'test-tasks.json');
 const TEST_DIR = path.resolve(__dirname, '..');
 const TEST_EXPORT_FILE = path.join(TEST_DIR, 'test-export.json');
+const BACKUPS_DIR = path.resolve(__dirname, '..', 'backups');
 
-// Set test data file
-process.env.TASK_DATA_FILE = TEST_DATA_FILE;
+beforeAll(async () => {
+  // Initialize database before all tests
+  await initDatabase();
+});
 
 beforeEach(() => {
-  // Clean up test file before each test
-  if (fs.existsSync(TEST_DATA_FILE)) {
-    fs.unlinkSync(TEST_DATA_FILE);
+  // Reset database before each test
+  resetDatabase();
+  
+  // Clean up backups before each test to avoid interference
+  if (fs.existsSync(BACKUPS_DIR)) {
+    const files = fs.readdirSync(BACKUPS_DIR);
+    files.forEach(file => {
+      fs.unlinkSync(path.join(BACKUPS_DIR, file));
+    });
   }
 });
 
 afterEach(() => {
   // Clean up after each test
-  if (fs.existsSync(TEST_DATA_FILE)) {
-    fs.unlinkSync(TEST_DATA_FILE);
-  }
   if (fs.existsSync(TEST_EXPORT_FILE)) {
     fs.unlinkSync(TEST_EXPORT_FILE);
   }
@@ -69,16 +75,8 @@ describe('Task Manager', () => {
     expect(() => completeTask(999)).toThrow('Task with ID 999 not found');
   });
 
-  test('readTasks should handle corrupted JSON', () => {
-    // Manually create corrupted file
-    fs.writeFileSync(TEST_DATA_FILE, 'invalid json');
-    const tasks = readTasks();
-    expect(tasks).toEqual([]);
-  });
-
-  test('readTasks should handle non-array data', () => {
-    fs.writeFileSync(TEST_DATA_FILE, '{"not": "array"}');
-    const tasks = readTasks();
+  test('listTasks should return empty array initially', () => {
+    const tasks = listTasks();
     expect(tasks).toEqual([]);
   });
 
@@ -133,14 +131,15 @@ describe('Task Manager', () => {
     addTask('Imported task 2');
     exportTasks('test-export.json');
     
-    // Clear current tasks
-    const emptiedData = [];
-    fs.writeFileSync(TEST_DATA_FILE, JSON.stringify(emptiedData));
+    // Reset the database (simulating a fresh start)
+    resetDatabase();
+    let tasks = listTasks();
+    expect(tasks).toHaveLength(0);
     
     // Import from file
     const result = importTasks('test-export.json');
     expect(result.taskCount).toBe(2);
-    const tasks = listTasks();
+    tasks = listTasks();
     expect(tasks).toHaveLength(2);
     expect(tasks[0].text).toBe('Imported task 1');
     expect(tasks[1].text).toBe('Imported task 2');
@@ -175,17 +174,20 @@ describe('Task Manager', () => {
     const task1 = addTask('Backup test 1');
     const task2 = addTask('Backup test 2');
     
-    // Get the most recent backup
+    // Get the backup created after adding both tasks
     const backups = listBackups();
     expect(backups.length).toBeGreaterThan(0);
+    
+    // Save the backup filename to restore from
+    const backupToRestore = backups[0];
     
     // Delete a task to change state
     deleteTask(task2.id);
     let tasks = listTasks();
     expect(tasks).toHaveLength(1);
     
-    // Restore from backup
-    const result = restoreFromBackup(backups[0]);
+    // Restore from the backup captured earlier
+    const result = restoreFromBackup(backupToRestore);
     expect(result.taskCount).toBe(2);
     tasks = listTasks();
     expect(tasks).toHaveLength(2);

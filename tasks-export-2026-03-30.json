@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "text": "Buy groceries",
+    "done": false,
+    "createdAt": "2026-03-30T13:15:57.297Z"
+  },
+  {
+    "id": 3,
+    "text": "Call mom",
+    "done": false,
+    "createdAt": "2026-03-30T13:15:57.814Z"
+  }
+]

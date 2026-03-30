@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const { addTask, listTasks, completeTask, deleteTask, editTask, exportTasks, importTasks, listBackups, restoreFromBackup } = require('./lib/taskManager');
+const { initDatabase } = require('./lib/database');
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -37,6 +38,9 @@ function formatTask(task) {
 }
 
 async function main() {
+  // Initialize database on startup
+  await initDatabase();
+  
   try {
     switch (command) {
       case 'add': {
