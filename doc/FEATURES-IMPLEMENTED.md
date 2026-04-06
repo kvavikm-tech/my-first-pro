@@ -193,6 +193,15 @@ Backup & Export:
 
 ---
 
+## Related Documentation
+
+- [Project overview and student-facing guide](Project-CLITaskManager.md)
+- [Quick command reference](QUICK-REFERENCE.md)
+- [Development workflow and process](Development-method.md)
+- [GSD task organization tool](GSD.md)
+
+---
+
 ## 🚀 Recent Changes (Latest Commits)
 
 ### Commit History
