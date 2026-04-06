@@ -126,6 +126,13 @@ node app.js import "safe-backup.json"
 
 ## Documentation
 
+This is the main README for the project. It contains the core overview, install steps, usage, commands, testing, and troubleshooting.
+
+Additional documentation is stored in the secondary README at `doc/README.md`.
+
+- [Secondary documentation README](doc/README.md)
+- [Complete feature reference](doc/FEATURES-IMPLEMENTED.md)
+
 For detailed information about all features, see [FEATURES-IMPLEMENTED.md](doc/FEATURES-IMPLEMENTED.md)
 
 ## Architecture
@@ -140,7 +147,12 @@ my-first-pro/
 ├── backups/                  # Auto-backup directory
 ├── tasks.json               # Current task data
 └── doc/
-    └── FEATURES-IMPLEMENTED.md  # Complete feature reference
+    ├── README.md
+    ├── FEATURES-IMPLEMENTED.md  # Complete feature reference
+    ├── Project-CLITaskManager.md
+    ├── QUICK-REFERENCE.md
+    ├── Development-method.md
+    └── GSD.md
 ```
 
 ## Key Functions
