@@ -62,10 +62,10 @@ get-shit-done
 ## What you do:
 
 - Create tasks
-    
 - Split into smaller subtasks
-    
 - Decide order
+- Define requirements (clarify input, output, edge cases)
+- Plan tests (what to verify and how to test each feature)
     
 
 ## Example plan:
