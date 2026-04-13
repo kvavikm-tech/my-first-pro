@@ -8,9 +8,16 @@
     "add": "node app.js add",
     "list": "node app.js list",
     "done": "node app.js done",
-    "test": "jest"
+    "test": "jest",
+    "mobile:start": "cd ui/mobile && npm start",
+    "mobile:ios": "cd ui/mobile && npm run ios",
+    "mobile:android": "cd ui/mobile && npm run android",
+    "mobile:web": "cd ui/mobile && npm run web",
+    "mobile:install": "cd ui/mobile && npm install"
   },
   "dependencies": {
+    "expo": "^55.0.15",
+    "expo-sharing": "^55.0.18",
     "sql.js": "^1.10.0"
   },
   "devDependencies": {
