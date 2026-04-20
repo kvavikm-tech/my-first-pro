@@ -1,15 +1,33 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, Modal } from 'react-native';
-import DatePicker from 'react-native-date-picker';
 import { TaskContext } from '../context/TaskContext';
+
+function formatDateInput(dateValue) {
+  if (!dateValue) return '';
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function parseDateInput(value) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (!match) return null;
+  const parsed = new Date(`${trimmed}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
 
 export default function CreateTaskScreen({ route, navigation }) {
   const { addTask, updateTask, tags } = useContext(TaskContext);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
-  const [dueDate, setDueDate] = useState(null);
+  const [dueDateInput, setDueDateInput] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTagPicker, setShowTagPicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -20,12 +38,13 @@ export default function CreateTaskScreen({ route, navigation }) {
     if (isEditing && editingTask) {
       setTitle(editingTask.title);
       setNotes(editingTask.notes || '');
-      setDueDate(editingTask.dueDate ? new Date(editingTask.dueDate) : null);
+      setDueDateInput(formatDateInput(editingTask.dueDate));
       setSelectedTags(editingTask.tags || []);
       navigation.setOptions({
         title: 'Edit Task',
       });
     } else {
+      setDueDateInput('');
       navigation.setOptions({
         title: 'New Task',
       });
@@ -38,6 +57,12 @@ export default function CreateTaskScreen({ route, navigation }) {
       return;
     }
 
+    const parsedDueDate = parseDateInput(dueDateInput);
+    if (dueDateInput.trim() && !parsedDueDate) {
+      Alert.alert('Error', 'Use due date format YYYY-MM-DD');
+      return;
+    }
+
     setLoading(true);
     try {
       if (isEditing) {
@@ -45,14 +70,14 @@ export default function CreateTaskScreen({ route, navigation }) {
           ...editingTask,
           title: title.trim(),
           notes: notes.trim(),
-          dueDate: dueDate?.toISOString() || null,
+          dueDate: parsedDueDate?.toISOString() || null,
           tags: selectedTags,
         });
       } else {
         await addTask({
           title: title.trim(),
           notes: notes.trim(),
-          dueDate: dueDate?.toISOString() || null,
+          dueDate: parsedDueDate?.toISOString() || null,
           tags: selectedTags,
         });
       }
@@ -96,19 +121,20 @@ export default function CreateTaskScreen({ route, navigation }) {
         {/* Due Date */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Due Date (Optional)</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={styles.dateButtonText}>
-              {dueDate ? dueDate.toDateString() : 'No due date'}
-            </Text>
-          </TouchableOpacity>
-          {dueDate && (
-            <TouchableOpacity onPress={() => setDueDate(null)}>
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor="#999"
+            value={dueDateInput}
+            onChangeText={setDueDateInput}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {dueDateInput.trim() ? (
+            <TouchableOpacity onPress={() => setDueDateInput('')}>
               <Text style={styles.clearDate}>Clear date</Text>
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
 
         {/* Tags */}
@@ -170,18 +196,6 @@ export default function CreateTaskScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Date Picker Modal */}
-      <DatePicker
-        modal
-        open={showDatePicker}
-        date={dueDate || new Date()}
-        onConfirm={(date) => {
-          setDueDate(date);
-          setShowDatePicker(false);
-        }}
-        onCancel={() => setShowDatePicker(false)}
-      />
 
       {/* Tag Picker Modal */}
       <Modal visible={showTagPicker} animationType="slide" presentationStyle="pageSheet">
