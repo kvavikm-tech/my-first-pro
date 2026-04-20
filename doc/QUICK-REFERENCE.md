@@ -91,6 +91,17 @@ npm install   # One-time setup
 npm test      # Run all tests
 ```
 
+## Mobile Testing (Expo Go)
+
+```bash
+npm run mobile:install   # One-time mobile dependency setup
+npm run mobile:start     # Start Expo and scan QR in Expo Go
+```
+
+- Use Expo Go on your phone (iOS/Android) to test.
+- No Xcode is required for this flow.
+- Prefer `mobile:start` for phone testing instead of `mobile:ios`.
+
 ## Tips & Tricks
 
 1. **Always export before deleting tasks** - Just in case!

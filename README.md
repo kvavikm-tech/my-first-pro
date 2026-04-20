@@ -62,6 +62,27 @@ npm install
 node app.js add "Your first task"
 ```
 
+## Mobile App Quick Start (Expo Go, No Xcode)
+
+Use this flow to test on a real phone with Expo Go.
+
+```bash
+# Install mobile dependencies
+npm run mobile:install
+
+# Start Expo dev server
+npm run mobile:start
+```
+
+Then scan the QR code:
+- iOS: scan with Camera, open in Expo Go
+- Android: open Expo Go and use Scan QR Code
+
+Use `mobile:start` for Expo Go testing. You do not need `mobile:ios` (Xcode simulator) for this setup.
+
+Detailed step-by-step guide:
+- [Testing app with Expo Go](guides/Testing%20app%20with%20Expo%20Go.md)
+
 ## How It Works
 
 ### Automatic Backups
