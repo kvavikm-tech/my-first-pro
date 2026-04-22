@@ -7,7 +7,7 @@
  * - Backup/restore operations
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 
 const TASKS_FILE = FileSystem.documentDirectory + 'tasks.json';
