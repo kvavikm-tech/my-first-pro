@@ -1,5 +1,4 @@
 import React, { createContext, useReducer, useCallback, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { TaskAdapter } from '../utils/taskAdapter';
 
 export const TaskContext = createContext();
@@ -10,6 +9,12 @@ const initialState = {
   loading: true,
   error: null,
 };
+
+function generateId() {
+  const time = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 10);
+  return `${time}-${random}`;
+}
 
 function taskReducer(state, action) {
   switch (action.type) {
@@ -99,7 +104,7 @@ export function TaskProvider({ children }) {
   const addTask = useCallback(async (taskData) => {
     try {
       const newTask = {
-        id: uuidv4(),
+        id: generateId(),
         title: taskData.title,
         completed: false,
         createdAt: new Date().toISOString(),
@@ -150,7 +155,7 @@ export function TaskProvider({ children }) {
   const addTag = useCallback(async (tagData) => {
     try {
       const newTag = {
-        id: uuidv4(),
+        id: generateId(),
         name: tagData.name,
         color: tagData.color || '#3498db',
         createdAt: new Date().toISOString(),
