@@ -46,7 +46,7 @@ function taskReducer(state, action) {
         ...state,
         tasks: state.tasks.map(task =>
           task.id === action.payload
-            ? { ...task, completed: !task.completed }
+            ? { ...task, completed: true }
             : task
         ),
       };
@@ -123,14 +123,15 @@ export function TaskProvider({ children }) {
 
   const updateTask = useCallback(async (taskId, updates) => {
     try {
-      const updated = { ...updates, id: taskId };
+      const existing = state.tasks.find(t => t.id === taskId) || {};
+      const updated = { ...existing, ...updates, id: taskId };
       await TaskAdapter.updateTask(updated);
       dispatch({ type: 'UPDATE_TASK', payload: updated });
     } catch (err) {
       dispatch({ type: 'SET_ERROR', payload: err.message });
       throw err;
     }
-  }, []);
+  }, [state.tasks]);
 
   const deleteTask = useCallback(async (taskId) => {
     try {
