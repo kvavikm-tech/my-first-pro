@@ -23,7 +23,7 @@ function parseDateInput(value) {
 }
 
 export default function CreateTaskScreen({ route, navigation }) {
-  const { addTask, updateTask, tags } = useContext(TaskContext);
+  const { addTask, updateTask, deleteTask, tags } = useContext(TaskContext);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [dueDateInput, setDueDateInput] = useState('');
@@ -87,6 +87,33 @@ export default function CreateTaskScreen({ route, navigation }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = () => {
+    if (!isEditing || !editingTask?.id) return;
+
+    Alert.alert(
+      'Delete Task',
+      'Are you sure you want to delete this task?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await deleteTask(editingTask.id);
+              navigation.goBack();
+            } catch (err) {
+              Alert.alert('Error', err.message);
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const toggleTag = (tagId) => {
@@ -195,6 +222,16 @@ export default function CreateTaskScreen({ route, navigation }) {
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
+
+        {isEditing ? (
+          <TouchableOpacity
+            style={[styles.button, styles.deleteButton]}
+            onPress={handleDelete}
+            disabled={loading}
+          >
+            <Text style={styles.deleteButtonText}>Delete Task</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {/* Tag Picker Modal */}
@@ -340,6 +377,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+  },
+  deleteButton: {
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+    marginTop: 4,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#e74c3c',
   },
   tagPickerContainer: {
     flex: 1,

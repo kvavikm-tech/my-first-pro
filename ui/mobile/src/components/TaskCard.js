@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { TaskContext } from '../context/TaskContext';
 
@@ -62,7 +62,18 @@ export default function TaskCard({ task, onPress, onComplete, onDelete }) {
   };
 
   return (
-    <Swipeable renderRightActions={renderRightActions} ref={swipeRef}>
+    <Swipeable
+      renderRightActions={renderRightActions}
+      ref={swipeRef}
+      rightThreshold={35}
+      overshootRight={false}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'right' && onDelete) {
+          onDelete();
+          swipeRef.current?.close();
+        }
+      }}
+    >
       <TouchableOpacity style={styles.card} onPress={onPress}>
         <TouchableOpacity
           style={styles.checkbox}
