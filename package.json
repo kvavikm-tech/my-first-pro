@@ -10,6 +10,7 @@
     "done": "node app.js done",
     "test": "jest",
     "mobile:start": "cd ui/mobile && npm start",
+    "mobile:tunnel": "cd ui/mobile && npx expo start --tunnel",
     "mobile:ios": "cd ui/mobile && npm run ios",
     "mobile:android": "cd ui/mobile && npm run android",
     "mobile:web": "cd ui/mobile && npm run web",

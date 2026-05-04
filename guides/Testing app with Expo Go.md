@@ -57,6 +57,7 @@ These scripts exist in package.json:
 
 - npm run mobile:start
 - npm run mobile:web
+- npm run mobile:tunnel
 - npm run mobile:android
 - npm run mobile:ios
 
@@ -69,6 +70,24 @@ For Expo Go testing, use mobile:start. You do not need mobile:ios (Xcode simulat
 - Make sure the phone and computer are on the same Wi-Fi
 - Restart Expo server and rescan the QR code
 - In Expo terminal UI, switch connection mode from LAN to Tunnel
+
+### Unknown error: Could not connect to server (exp://...:8081)
+
+If Expo Go shows this error, start in Tunnel mode:
+
+npm run mobile:tunnel
+
+Then scan the new QR code.
+
+If it still fails:
+
+- Sign in to Expo Go on your phone and sign in in terminal if prompted
+- Turn off VPN on both phone and computer
+- Allow Node.js through Windows Firewall on Private network
+- Check the exp URL shown in terminal. It must have 4 number blocks (for example: 192.168.1.20:8081)
+- Restart with clean cache in tunnel mode:
+
+npx expo start -c --tunnel
 
 ### Metro bundler cache issues
 
@@ -86,3 +105,4 @@ From project root:
 
 npm run mobile:install
 npm run mobile:start
+npm run mobile:tunnel
