@@ -5,10 +5,11 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "api": "node api/server.js",
     "add": "node app.js add",
     "list": "node app.js list",
     "done": "node app.js done",
-    "test": "jest",
+    "test": "jest --runInBand",
     "mobile:start": "cd ui/mobile && npm start",
     "mobile:tunnel": "cd ui/mobile && npx expo start --tunnel",
     "mobile:ios": "cd ui/mobile && npm run ios",
@@ -17,6 +18,7 @@
     "mobile:install": "cd ui/mobile && npm install"
   },
   "dependencies": {
+    "express": "^4.21.2",
     "expo": "^55.0.15",
     "expo-sharing": "^55.0.18",
     "react-dom": "19.2.0",
@@ -24,7 +26,8 @@
     "sql.js": "^1.10.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "supertest": "^7.1.1"
   },
   "author": "Martinus",
   "license": "MIT"
