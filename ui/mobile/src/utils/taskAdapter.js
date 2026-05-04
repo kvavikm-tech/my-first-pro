@@ -11,6 +11,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 
 const IS_WEB = Platform.OS === 'web';
+const API_URL = (process.env.EXPO_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
+const API_KEY = (process.env.EXPO_PUBLIC_API_KEY || '').trim();
+const USE_API = (process.env.EXPO_PUBLIC_USE_API || '').toLowerCase() === 'true';
 const STORAGE_KEYS = {
   tasks: 'task_manager_tasks',
   tags: 'task_manager_tags',
@@ -26,6 +29,83 @@ const BACKUPS_INDEX_FILE = FileSystem.documentDirectory + 'backups-index.json';
 class TaskAdapterClass {
   constructor() {
     this.initialized = false;
+    this.apiEnabled = USE_API && Boolean(API_URL) && Boolean(API_KEY);
+  }
+
+  shouldUseApi() {
+    return this.apiEnabled;
+  }
+
+  normalizeTaskId(taskId) {
+    const parsed = Number(taskId);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error('Task ID must be a positive integer');
+    }
+    return parsed;
+  }
+
+  toApiTaskPayload(task) {
+    const text = (task?.title || task?.text || '').trim();
+    if (!text) {
+      throw new Error('Task text is required');
+    }
+
+    const tags = Array.isArray(task?.tags)
+      ? task.tags.filter((tag) => typeof tag === 'string').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
+      : [];
+
+    return {
+      text,
+      tags,
+      notes: typeof task?.notes === 'string' ? task.notes : '',
+      dueDate: task?.dueDate ?? null,
+    };
+  }
+
+  fromApiTask(task) {
+    return {
+      id: task.id,
+      title: task.text,
+      completed: Boolean(task.done),
+      createdAt: task.createdAt || new Date().toISOString(),
+      dueDate: task.dueDate ?? null,
+      tags: Array.isArray(task.tags) ? task.tags : [],
+      notes: typeof task.notes === 'string' ? task.notes : '',
+      updatedAt: task.updatedAt || null,
+      completedAt: task.completedAt || null,
+    };
+  }
+
+  async apiRequest(path, options = {}) {
+    if (!this.shouldUseApi()) {
+      throw new Error('API mode is not enabled');
+    }
+
+    const response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_KEY,
+        ...(options.headers || {}),
+      },
+    });
+
+    const bodyText = await response.text();
+    let body = {};
+    if (bodyText) {
+      try {
+        body = JSON.parse(bodyText);
+      } catch {
+        body = { error: bodyText };
+      }
+    }
+
+    if (!response.ok) {
+      const message = body?.error || `API request failed with status ${response.status}`;
+      throw new Error(message);
+    }
+
+    return body;
   }
 
   readWebJson(key, fallback) {
@@ -55,6 +135,11 @@ class TaskAdapterClass {
     if (this.initialized) return;
     
     try {
+      if (this.shouldUseApi()) {
+        this.initialized = true;
+        return;
+      }
+
       if (IS_WEB) {
         if (!Array.isArray(this.readWebJson(STORAGE_KEYS.tasks, null))) {
           this.writeWebJson(STORAGE_KEYS.tasks, []);
@@ -105,6 +190,11 @@ class TaskAdapterClass {
   async getTasks() {
     await this.init();
     try {
+      if (this.shouldUseApi()) {
+        const data = await this.apiRequest('/tasks');
+        return Array.isArray(data.tasks) ? data.tasks.map((task) => this.fromApiTask(task)) : [];
+      }
+
       if (IS_WEB) {
         return this.readWebJson(STORAGE_KEYS.tasks, []);
       }
@@ -133,6 +223,26 @@ class TaskAdapterClass {
   async addTask(task) {
     await this.init();
     try {
+      if (this.shouldUseApi()) {
+        const payload = this.toApiTaskPayload(task);
+        const data = await this.apiRequest('/tasks', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        const mapped = this.fromApiTask(data.task);
+        task.id = mapped.id;
+        task.title = mapped.title;
+        task.completed = mapped.completed;
+        task.createdAt = mapped.createdAt;
+        task.dueDate = mapped.dueDate;
+        task.tags = mapped.tags;
+        task.notes = mapped.notes;
+        task.updatedAt = mapped.updatedAt;
+        task.completedAt = mapped.completedAt;
+        return;
+      }
+
       const tasks = await this.getTasks();
       tasks.push(task);
       await this.saveTasks(tasks);
@@ -145,6 +255,16 @@ class TaskAdapterClass {
   async updateTask(task) {
     await this.init();
     try {
+      if (this.shouldUseApi()) {
+        const taskId = this.normalizeTaskId(task.id);
+        const payload = this.toApiTaskPayload(task);
+        await this.apiRequest(`/tasks/${taskId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        });
+        return;
+      }
+
       const tasks = await this.getTasks();
       const index = tasks.findIndex(t => t.id === task.id);
       if (index !== -1) {
@@ -160,6 +280,14 @@ class TaskAdapterClass {
   async deleteTask(taskId) {
     await this.init();
     try {
+      if (this.shouldUseApi()) {
+        const normalizedId = this.normalizeTaskId(taskId);
+        await this.apiRequest(`/tasks/${normalizedId}`, {
+          method: 'DELETE',
+        });
+        return;
+      }
+
       const tasks = await this.getTasks();
       const filtered = tasks.filter(t => t.id !== taskId);
       await this.saveTasks(filtered);
@@ -172,6 +300,14 @@ class TaskAdapterClass {
   async completeTask(taskId) {
     await this.init();
     try {
+      if (this.shouldUseApi()) {
+        const normalizedId = this.normalizeTaskId(taskId);
+        await this.apiRequest(`/tasks/${normalizedId}/done`, {
+          method: 'PATCH',
+        });
+        return;
+      }
+
       const tasks = await this.getTasks();
       const task = tasks.find(t => t.id === taskId);
       if (task) {
@@ -260,6 +396,10 @@ class TaskAdapterClass {
 
   async createBackup(action = '') {
     try {
+      if (this.shouldUseApi()) {
+        return;
+      }
+
       const tasks = await this.getTasks();
       const tags = await this.getTags();
       const fileName = this.createBackupFileName();
@@ -293,6 +433,10 @@ class TaskAdapterClass {
 
   async updateBackupsIndex() {
     try {
+      if (this.shouldUseApi()) {
+        return;
+      }
+
       if (IS_WEB) {
         const backups = this.readWebJson(STORAGE_KEYS.backups, []);
         const names = backups.map(b => b.fileName).filter(Boolean);
@@ -322,6 +466,16 @@ class TaskAdapterClass {
 
   async getBackupsList() {
     await this.init();
+
+    if (this.shouldUseApi()) {
+      const data = await this.apiRequest('/backups');
+      const backups = Array.isArray(data.backups) ? data.backups : [];
+      return {
+        count: backups.length,
+        latestBackup: backups.length > 0 ? backups[0] : null,
+        backups,
+      };
+    }
 
     if (IS_WEB) {
       const parsed = this.readWebJson(STORAGE_KEYS.backupsIndex, null);
@@ -368,6 +522,13 @@ class TaskAdapterClass {
 
   async restoreFromBackup(backupFileName) {
     try {
+      if (this.shouldUseApi()) {
+        await this.apiRequest(`/backups/${encodeURIComponent(backupFileName)}/restore`, {
+          method: 'POST',
+        });
+        return;
+      }
+
       let backup;
 
       if (IS_WEB) {
@@ -469,17 +630,19 @@ class TaskAdapterClass {
       const latestBackup = backupsList.latestBackup;
       
       if (!latestBackup) {
-        return { lastBackup: null, status: 'No backups yet' };
+        return { lastBackup: null, status: this.shouldUseApi() ? 'No server backups yet' : 'No backups yet' };
       }
       
-      if (!IS_WEB) {
+      if (!IS_WEB && !this.shouldUseApi()) {
         const filePath = BACKUPS_DIR + latestBackup;
         await FileSystem.getInfoAsync(filePath);
       }
       
       return {
         lastBackup: latestBackup,
-        status: `✓ Auto-backup enabled (${backupsList.count} backups)`,
+        status: this.shouldUseApi()
+          ? `✓ Server backup enabled (${backupsList.count} backups)`
+          : `✓ Auto-backup enabled (${backupsList.count} backups)`,
         timestamp: latestBackup.replace(/['-]/g, ':').substring(7, 20),
       };
     } catch (err) {
