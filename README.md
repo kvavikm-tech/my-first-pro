@@ -83,6 +83,37 @@ Use `mobile:start` for Expo Go testing. You do not need `mobile:ios` (Xcode simu
 Detailed step-by-step guide:
 - [Testing app with Expo Go](guides/Testing%20app%20with%20Expo%20Go.md)
 
+## Phone PWA + Raspberry Pi Server Setup
+
+Use this when your phone should only run the app UI and the Pi should run the API.
+
+1. Start the API on Raspberry Pi.
+2. Confirm API is healthy on Pi:
+
+```bash
+curl http://127.0.0.1:3000/health
+```
+
+3. In `ui/mobile/.env`, set:
+
+```dotenv
+EXPO_PUBLIC_USE_API=true
+EXPO_PUBLIC_API_URL=http://<pi-lan-ip>:3000
+EXPO_PUBLIC_API_KEY=<your-api-key>
+```
+
+4. For global access, use your Funnel URL instead:
+
+```dotenv
+EXPO_PUBLIC_API_URL=https://<device>.ts.net
+```
+
+5. Open the PWA on phone and verify task reads/writes.
+
+Important:
+- Do not use `localhost` in the phone/PWA API URL.
+- On phone, `localhost` points to the phone itself, not the Pi.
+
 ## How It Works
 
 ### Automatic Backups

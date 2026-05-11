@@ -34,6 +34,31 @@ This means we must add an API layer and a compatibility mapping between mobile m
 - Require `X-API-Key` on all non-health routes.
 - Migrate mobile app adapter from local file storage to API calls.
 
+### Client/Server Responsibility (Phone vs Pi)
+
+- Phone runs only the PWA client UI in a browser.
+- Raspberry Pi runs the API server process and data storage.
+- The phone must call the Pi API URL; the phone should never run the server.
+- Never use `localhost` in the phone/PWA API URL.
+  - On phone, `localhost` means the phone itself, not the Pi.
+
+### PWA Connection Setup Checklist (Phone Uses Pi Server)
+
+1. Start API on Pi and verify from Pi itself:
+   - `curl http://127.0.0.1:3000/health`
+2. Confirm the Pi reachable URL from your phone context:
+   - Home Wi-Fi: `http://<pi-lan-ip>:3000`
+   - Global (Funnel): `https://<device>.ts.net`
+3. In `ui/mobile/.env`, set:
+   - `EXPO_PUBLIC_USE_API=true`
+   - `EXPO_PUBLIC_API_URL=<pi-url-from-step-2>`
+   - `EXPO_PUBLIC_API_KEY=<same-key-as-server-API_KEY>`
+4. Build/run web and open from phone browser.
+5. Validate behavior:
+   - Tasks load from server data.
+   - Creating/editing tasks changes server state.
+   - If Pi is offline, app shows offline read-cache banner (Phase 3f).
+
 ## Scope
 
 ### In scope (MVP)
@@ -49,6 +74,26 @@ This means we must add an API layer and a compatibility mapping between mobile m
 - Rate limiting and advanced abuse controls
 - Multi-node/high-availability
 - Paid cloud failover
+
+## Progress Status
+
+| Phase | Status |
+|---|---|
+| Phase 1: API server | ✅ Done |
+| Phase 2: CLI stable + tests | ✅ Done (32/32 passing) |
+| Phase 3: Mobile migration to API | ✅ Done |
+| Phase 3b: Full metadata (tags/notes/dueDate) | ✅ Done |
+| Phase 3c: TaskContext alignment | ✅ Done |
+| Phase 3d: Mobile env config (.env / .env.example) | ✅ Done |
+| Phase 3e: PWA — export web fallback | ⏳ Pending |
+| Phase 3f: PWA — offline read cache | ⏳ Pending |
+| Phase 3g: PWA — webpack build + serve from Pi | ⏳ Pending |
+| Phase 4: Raspberry Pi deployment | 🔄 In progress |
+| Phase 5: Tailscale Funnel global access | ⏳ Pending |
+| Phase 6: Security and operations | ⏳ Pending |
+| Phase 7: Auth upgrade (later) | ⏳ Future |
+
+---
 
 ## Implementation Plan
 
@@ -97,6 +142,27 @@ This means we must add an API layer and a compatibility mapping between mobile m
 4. Add systemd service for boot/start/restart.
 5. Verify data persistence in `db/tasks.db` and backups in `backups/`.
 
+### Phase 4 Execution Commands
+
+1. Clone and install on Pi:
+   - `git clone <your-repo-url> ~/my-first-pro`
+   - `cd ~/my-first-pro`
+   - `npm install`
+2. Create service env file:
+   - `sudo cp setup/task-api.env.example /etc/default/task-api`
+   - `sudo nano /etc/default/task-api` (set a real `API_KEY`)
+3. Install service unit:
+   - `chmod +x setup/install-service.sh`
+   - `./setup/install-service.sh ~/my-first-pro`
+   - optional manual path:
+     - `sudo cp setup/task-api.service /etc/systemd/system/task-api.service`
+     - `sudo systemctl daemon-reload`
+     - `sudo systemctl enable task-api.service`
+     - `sudo systemctl start task-api.service`
+4. Validate locally on Pi:
+   - `curl http://127.0.0.1:3000/health`
+   - `curl -H "X-API-Key: <your-key>" http://127.0.0.1:3000/tasks`
+
 ## Phase 5: Global Public Access (Free)
 
 1. Install and authenticate Tailscale on Pi.
@@ -110,6 +176,43 @@ This means we must add an API layer and a compatibility mapping between mobile m
 3. Add scheduled backup pruning (avoid unlimited backup file growth).
 4. Run restore drill monthly.
 
+### Phase 6 Execution Commands
+
+1. Install prune script and make executable:
+   - `sudo cp setup/backup-prune.sh /usr/local/bin/task-backup-prune.sh`
+   - `sudo chmod +x /usr/local/bin/task-backup-prune.sh`
+2. Add cron job (daily at 03:15, keep newest 200 backups):
+   - `sudo crontab -e`
+   - `15 3 * * * /usr/local/bin/task-backup-prune.sh /home/pi/my-first-pro 200 >> /var/log/task-backup-prune.log 2>&1`
+
+## Phase 3e: PWA — Export Web Fallback
+
+The app has an export/share button that uses `expo-sharing` (native only — does not work in a browser).
+
+In API mode on the web, replace the native share sheet with a browser file download:
+1. Fetch tasks from API.
+2. Create a Blob with JSON content.
+3. Trigger `<a download>` in the browser — standard browser download dialog.
+4. Keep native share behavior on iOS/Android builds.
+
+## Phase 3f: PWA — Offline Read Cache
+
+When the phone cannot reach the Pi, the app currently shows an error and breaks.
+
+Fix: cache the last successful task list in `localStorage` so the app shows your tasks even offline.
+1. On successful `getTasks()` API response, write result to `localStorage` as `task_cache`.
+2. On API failure, read `task_cache` from `localStorage` and return it with an `offline: true` flag.
+3. Show a "You are offline — showing last saved data" banner in the UI when offline.
+4. Writes (add/edit/delete) show a clear error when offline rather than silently failing.
+
+## Phase 3g: PWA — Webpack Build + Serve from Pi
+
+1. Add `@expo/webpack-config` to mobile devDependencies (enables PWA manifest + service worker).
+2. Update `app.json` with PWA metadata: `bundler: webpack`, theme color, short name, description.
+3. Add `npm run web:build` script → `expo export --platform web` → outputs to `ui/mobile/web-build/`.
+4. Serve `web-build/` as static files from the Express API server (or separate nginx).
+5. App becomes installable from the browser via "Add to Home Screen" on both Android and iPhone.
+
 ## Phase 7: Auth Upgrade After MVP (Planned)
 
 1. Keep API key auth for MVP while validating full app flow.
@@ -122,18 +225,25 @@ This means we must add an API layer and a compatibility mapping between mobile m
 ## File-Level Work Plan
 
 ### Create
-- `api/server.js`
-- `api/auth.js`
-- `__tests__/api.test.js`
-- `setup/task-api.service`
-- `setup/backup-prune.sh`
+- `api/server.js` ✅
+- `api/app.js` ✅
+- `api/auth.js` ✅
+- `__tests__/api.test.js` ✅
+- `ui/mobile/.env` ✅
+- `ui/mobile/.env.example` ✅
+- `setup/task-api.service` ✅
+- `setup/backup-prune.sh` ✅
+- `setup/task-api.env.example` ✅
+- `setup/install-service.sh` ✅
 
 ### Update
-- `package.json`
-- `README.md`
-- `guides/Testing app with Expo Go.md`
-- `ui/mobile/src/utils/taskAdapter.js`
-- `ui/mobile/src/context/TaskContext.js`
+- `package.json` ✅
+- `lib/database.js` ✅ (metadata columns + migration)
+- `lib/taskManager.js` ✅ (metadata passthrough)
+- `ui/mobile/src/utils/taskAdapter.js` ✅ (API mode + metadata)
+- `ui/mobile/src/context/TaskContext.js` ✅ (merge fix + completeTask fix)
+- `README.md` ⏳
+- `guides/Testing app with Expo Go.md` ⏳
 
 ## Risks Specific to This Repo
 
