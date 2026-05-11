@@ -1,0 +1,23 @@
+[Unit]
+Description=My First Pro Task API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/my-first-pro
+EnvironmentFile=/etc/default/task-api
+ExecStart=/usr/bin/npm run api
+Restart=always
+RestartSec=5
+User=pi
+Group=pi
+
+# Basic hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+ReadWritePaths=/home/pi/my-first-pro/db /home/pi/my-first-pro/backups
+
+[Install]
+WantedBy=multi-user.target
