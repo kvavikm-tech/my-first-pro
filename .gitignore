@@ -3,5 +3,6 @@ db/tasks.db
 db/tasks.db-shm
 db/tasks.db-wal
 node_modules/
+.env
 
 .expo/
