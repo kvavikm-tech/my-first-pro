@@ -18,9 +18,10 @@
     "mobile:install": "cd ui/mobile && npm install"
   },
   "dependencies": {
-    "express": "^4.21.2",
+    "dotenv": "^17.4.2",
     "expo": "^55.0.15",
     "expo-sharing": "^55.0.18",
+    "express": "^4.21.2",
     "react-dom": "19.2.0",
     "react-native-web": "^0.21.0",
     "sql.js": "^1.10.0"
