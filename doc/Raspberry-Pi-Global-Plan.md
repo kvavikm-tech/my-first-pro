@@ -89,6 +89,7 @@ This means we must add an API layer and a compatibility mapping between mobile m
 | Phase 3f: PWA — offline read cache | ⏳ Pending |
 | Phase 3g: PWA — webpack build + serve from Pi | ⏳ Pending |
 | Phase 4: Raspberry Pi deployment | 🔄 In progress |
+| Phase 4a: Manual LAN API validation | ✅ Done |
 | Phase 5: Tailscale Funnel global access | ⏳ Pending |
 | Phase 6: Security and operations | ⏳ Pending |
 | Phase 7: Auth upgrade (later) | ⏳ Future |
@@ -141,6 +142,12 @@ This means we must add an API layer and a compatibility mapping between mobile m
 3. Run API locally on Pi and validate with curl.
 4. Add systemd service for boot/start/restart.
 5. Verify data persistence in `db/tasks.db` and backups in `backups/`.
+
+### Phase 4 Completed So Far
+
+1. Manual LAN connectivity test from laptop to Pi API completed.
+2. `GET /health` reachable over `http://<pi-lan-ip>:3000`.
+3. Auth route test performed and validated (`Unauthorized` on key mismatch confirms middleware enforcement).
 
 ### Phase 4 Execution Commands
 
@@ -273,6 +280,18 @@ Fix: cache the last successful task list in `localStorage` so the app shows your
    - `curl https://<funnel-url>/health`
 5. Validate authenticated route
    - `curl -H "X-API-Key: <key>" https://<funnel-url>/tasks`
+
+## Testing Hygiene (Secrets and IPs)
+
+1. Never paste or commit real API keys in docs, chat examples, screenshots, or commands.
+2. Use placeholders in all examples:
+   - API key: `<API_KEY_SAMPLE>`
+   - LAN IP: `<PI_LAN_IP>`
+   - Funnel URL: `<PI_FUNNEL_URL>`
+3. If a real key was shared during troubleshooting, rotate it immediately in `/etc/default/task-api` and restart service.
+4. Keep all public-facing instructions sanitized, even for local/LAN-only tests.
+5. Prefer command templates like:
+   - `curl -H "X-API-Key: <API_KEY_SAMPLE>" http://<PI_LAN_IP>:3000/tasks`
 
 ## Decision Log
 
