@@ -88,8 +88,9 @@ This means we must add an API layer and a compatibility mapping between mobile m
 | Phase 3e: PWA — export web fallback | ⏳ Pending |
 | Phase 3f: PWA — offline read cache | ⏳ Pending |
 | Phase 3g: PWA — webpack build + serve from Pi | ⏳ Pending |
-| Phase 4: Raspberry Pi deployment | 🔄 In progress |
+| Phase 4: Raspberry Pi deployment | ✅ Done |
 | Phase 4a: Manual LAN API validation | ✅ Done |
+| Phase 4b: Direct-on-Pi API validation | ✅ Done |
 | Phase 5: Tailscale Funnel global access | ⏳ Pending |
 | Phase 6: Security and operations | ⏳ Pending |
 | Phase 7: Auth upgrade (later) | ⏳ Future |
@@ -148,6 +149,12 @@ This means we must add an API layer and a compatibility mapping between mobile m
 1. Manual LAN connectivity test from laptop to Pi API completed.
 2. `GET /health` reachable over `http://<pi-lan-ip>:3000`.
 3. Auth route test performed and validated (`Unauthorized` on key mismatch confirms middleware enforcement).
+4. Direct-on-Pi validation completed successfully.
+5. Service checks passed (`active` + `enabled`).
+6. API endpoint checks passed from Pi shell:
+   - `GET /health`
+   - `GET /tasks` with valid `X-API-Key`
+   - `GET /tasks` with invalid key returns `Unauthorized`
 
 ### Phase 4 Execution Commands
 
