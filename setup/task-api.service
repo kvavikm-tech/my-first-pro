@@ -4,20 +4,20 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/pi/my-first-pro
+WorkingDirectory={{PROJECT_DIR}}
 EnvironmentFile=/etc/default/task-api
 ExecStart=/usr/bin/npm run api
 Restart=always
 RestartSec=5
-User=pi
-Group=pi
+User={{RUN_USER}}
+Group={{RUN_GROUP}}
 
 # Basic hardening
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=false
-ReadWritePaths=/home/pi/my-first-pro/db /home/pi/my-first-pro/backups
+ReadWritePaths={{PROJECT_DIR}}/db {{PROJECT_DIR}}/backups
 
 [Install]
 WantedBy=multi-user.target
