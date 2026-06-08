@@ -59,10 +59,26 @@ function extractTaskMetadata(body = {}) {
   return metadata;
 }
 
+function createRequestLogger() {
+  return function requestLogger(req, res, next) {
+    const startedAt = Date.now();
+
+    res.on('finish', () => {
+      const durationMs = Date.now() - startedAt;
+      console.log(
+        `${new Date().toISOString()} ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`
+      );
+    });
+
+    next();
+  };
+}
+
 function createApp() {
   const app = express();
 
   app.use(express.json({ limit: '1mb' }));
+  app.use(createRequestLogger());
   app.use(createApiKeyMiddleware());
 
   app.get('/health', (req, res) => {
