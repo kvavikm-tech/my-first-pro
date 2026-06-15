@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, Modal, TextInput, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -38,6 +38,21 @@ export default function BackupScreen() {
       const jsonData = await exportTasks();
       const timestamp = new Date().toISOString().substring(0, 10);
       const fileName = `tasks-export-${timestamp}.json`;
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8' });
+        const downloadUrl = globalThis.URL.createObjectURL(blob);
+        const link = globalThis.document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        globalThis.document.body.appendChild(link);
+        link.click();
+        globalThis.document.body.removeChild(link);
+        globalThis.URL.revokeObjectURL(downloadUrl);
+        Alert.alert('Success', `Tasks exported as ${fileName}`);
+        return;
+      }
+
       const filePath = FileSystem.documentDirectory + fileName;
 
       await FileSystem.writeAsStringAsync(filePath, jsonData);
@@ -107,7 +122,9 @@ export default function BackupScreen() {
             </View>
           </View>
           <Text style={styles.statusNote}>
-            Every task change is automatically backed up to device storage.
+            {TaskAdapter.shouldUseApi()
+              ? 'Backups are managed on the server in API mode.'
+              : 'Every task change is automatically backed up to device storage.'}
           </Text>
         </View>
 

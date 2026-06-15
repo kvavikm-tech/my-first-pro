@@ -4,13 +4,7 @@
     "slug": "task-manager-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,12 +13,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "webpack",
+      "name": "Task Manager",
+      "shortName": "Tasks",
+      "description": "Task Manager PWA backed by Raspberry Pi API",
+      "themeColor": "#0b5fff",
+      "backgroundColor": "#ffffff"
     },
     "plugins": [
       "expo-sharing"
