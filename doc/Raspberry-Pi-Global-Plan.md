@@ -85,13 +85,13 @@ This means we must add an API layer and a compatibility mapping between mobile m
 | Phase 3b: Full metadata (tags/notes/dueDate) | ✅ Done |
 | Phase 3c: TaskContext alignment | ✅ Done |
 | Phase 3d: Mobile env config (.env / .env.example) | ✅ Done |
-| Phase 3e: PWA — export web fallback | ⏳ Pending |
-| Phase 3f: PWA — offline read cache | ⏳ Pending |
-| Phase 3g: PWA — webpack build + serve from Pi | ⏳ Pending |
+| Phase 3e: PWA — export web fallback | ✅ Done |
+| Phase 3f: PWA — offline read cache | ✅ Done |
+| Phase 3g: PWA — webpack build + serve from Pi | ✅ Done |
 | Phase 4: Raspberry Pi deployment | ✅ Done |
 | Phase 4a: Manual LAN API validation | ✅ Done |
 | Phase 4b: Direct-on-Pi API validation | ✅ Done |
-| Phase 5: Tailscale Funnel global access | ⏳ Pending |
+| Phase 5: Tailscale Funnel global access | 🔄 In Progress |
 | Phase 6: Security and operations | ⏳ Pending |
 | Phase 7: Auth upgrade (later) | ⏳ Future |
 
@@ -182,6 +182,50 @@ This means we must add an API layer and a compatibility mapping between mobile m
 1. Install and authenticate Tailscale on Pi.
 2. Enable Funnel for API port.
 3. Verify external HTTPS access from mobile data (outside home Wi-Fi).
+
+### Phase 5 Execution Commands (On Pi)
+
+1. Install Tailscale:
+   - `curl -fsSL https://tailscale.com/install.sh | sh`
+2. Authenticate Pi into your tailnet:
+   - `sudo tailscale up`
+   - complete browser auth when prompted
+3. Confirm node is connected:
+   - `tailscale status`
+   - `tailscale ip -4`
+4. Verify API is healthy locally before exposing publicly:
+   - `curl http://127.0.0.1:3000/health`
+5. Enable Funnel on the API port:
+   - `sudo tailscale funnel --bg --https=443 http://127.0.0.1:3000`
+6. Retrieve the public Funnel URL:
+   - `tailscale funnel status`
+   - copy `https://<PI_FUNNEL_URL>`
+
+### Phase 5 Validation Checklist
+
+1. Check public health endpoint from an external network:
+   - `curl https://<PI_FUNNEL_URL>/health`
+2. Check authenticated API route with key:
+   - `curl -H "X-API-Key: <API_KEY_SAMPLE>" https://<PI_FUNNEL_URL>/tasks`
+3. Confirm unauthorized response on wrong key:
+   - `curl -H "X-API-Key: WRONG" https://<PI_FUNNEL_URL>/tasks`
+   - expected: `Unauthorized`
+4. Verify from phone on mobile data (Wi-Fi OFF):
+   - open `https://<PI_FUNNEL_URL>/health`
+   - use same URL in `EXPO_PUBLIC_API_URL`
+
+### Phase 5 Rollback / Stop
+
+1. Disable Funnel if needed:
+   - `sudo tailscale funnel --https=443 off`
+2. Keep private tailnet access only:
+   - `tailscale status`
+
+### Phase 5 Notes
+
+- Keep all examples sanitized with placeholders, never real secrets.
+- Funnel exposes your Pi endpoint publicly; API key protection remains mandatory.
+- If your ISP/router changes and external checks fail, first re-run `tailscale funnel status` and service health checks.
 
 ## Phase 6: Security and Operations
 
