@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const {
   addTask,
   listTasks,
@@ -9,6 +11,34 @@ const {
   restoreFromBackup,
 } = require('../lib/taskManager');
 const { createApiKeyMiddleware } = require('./auth');
+
+function isApiRoute(requestPath) {
+  return /^\/(health|tasks|backups)(\/|$)/.test(requestPath);
+}
+
+function configureWebBuildHosting(app) {
+  const configuredDir = process.env.WEB_BUILD_DIR;
+  const webBuildDir = configuredDir
+    ? path.resolve(configuredDir)
+    : path.resolve(__dirname, '../ui/mobile/web-build');
+  const indexFile = path.join(webBuildDir, 'index.html');
+
+  if (!fs.existsSync(indexFile)) {
+    return;
+  }
+
+  app.use(express.static(webBuildDir));
+
+  app.get('*', (req, res, next) => {
+    if (req.method !== 'GET' || isApiRoute(req.path)) {
+      return next();
+    }
+
+    return res.sendFile(indexFile);
+  });
+
+  console.log(`Serving mobile web build from ${webBuildDir}`);
+}
 
 function parseTaskId(rawId) {
   const parsed = Number(rawId);
@@ -162,6 +192,8 @@ function createApp() {
       next(err);
     }
   });
+
+  configureWebBuildHosting(app);
 
   app.use((err, req, res, next) => {
     const status = mapErrorToStatus(err);

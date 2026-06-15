@@ -15,6 +15,7 @@
     "mobile:ios": "cd ui/mobile && npm run ios",
     "mobile:android": "cd ui/mobile && npm run android",
     "mobile:web": "cd ui/mobile && npm run web",
+    "mobile:web:build": "cd ui/mobile && npm run web:build",
     "mobile:install": "cd ui/mobile && npm install"
   },
   "dependencies": {
