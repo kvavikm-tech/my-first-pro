@@ -8,6 +8,7 @@ const initialState = {
   tags: [],
   loading: true,
   error: null,
+  offline: false,
 };
 
 function generateId() {
@@ -76,6 +77,9 @@ function taskReducer(state, action) {
     
     case 'SET_ERROR':
       return { ...state, error: action.payload };
+
+    case 'SET_OFFLINE':
+      return { ...state, offline: Boolean(action.payload) };
     
     default:
       return state;
@@ -96,6 +100,7 @@ export function TaskProvider({ children }) {
       const tags = await TaskAdapter.getTags();
       dispatch({ type: 'SET_TASKS', payload: tasks });
       dispatch({ type: 'SET_TAGS', payload: tags });
+      dispatch({ type: 'SET_OFFLINE', payload: TaskAdapter.wasLastReadOffline() });
     } catch (err) {
       dispatch({ type: 'SET_ERROR', payload: err.message });
     }

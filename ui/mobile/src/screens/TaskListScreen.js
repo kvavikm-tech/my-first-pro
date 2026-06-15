@@ -6,7 +6,7 @@ import TaskCard from '../components/TaskCard';
 import QuickAdd from '../components/QuickAdd';
 
 export default function TaskListScreen({ navigation }) {
-  const { tasks, completeTask, deleteTask, loadData } = useContext(TaskContext);
+  const { tasks, completeTask, deleteTask, loadData, offline } = useContext(TaskContext);
   const [searchText, setSearchText] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -63,6 +63,12 @@ export default function TaskListScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {offline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>You are offline - showing last saved data</Text>
+        </View>
+      )}
+
       <TextInput
         style={styles.searchBar}
         placeholder="Search tasks..."
@@ -105,6 +111,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  offlineBanner: {
+    backgroundColor: '#fff3cd',
+    borderBottomColor: '#f1d28a',
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  offlineBannerText: {
+    color: '#8a6d3b',
+    fontSize: 13,
+    fontWeight: '600',
   },
   searchBar: {
     backgroundColor: '#f5f5f5',

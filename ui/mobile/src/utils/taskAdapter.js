@@ -14,6 +14,7 @@ const IS_WEB = Platform.OS === 'web';
 const API_URL = (process.env.EXPO_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
 const API_KEY = (process.env.EXPO_PUBLIC_API_KEY || '').trim();
 const USE_API = (process.env.EXPO_PUBLIC_USE_API || '').toLowerCase() === 'true';
+const API_TASK_CACHE_KEY = 'task_cache';
 const STORAGE_KEYS = {
   tasks: 'task_manager_tasks',
   tags: 'task_manager_tags',
@@ -30,10 +31,29 @@ class TaskAdapterClass {
   constructor() {
     this.initialized = false;
     this.apiEnabled = USE_API && Boolean(API_URL) && Boolean(API_KEY);
+    this.lastReadOffline = false;
   }
 
   shouldUseApi() {
     return this.apiEnabled;
+  }
+
+  isOfflineError(err) {
+    const message = String(err?.message || '').toLowerCase();
+    return (
+      message.includes('failed to fetch') ||
+      message.includes('network request failed') ||
+      message.includes('networkerror') ||
+      message.includes('load failed')
+    );
+  }
+
+  wasLastReadOffline() {
+    return this.lastReadOffline;
+  }
+
+  buildOfflineWriteErrorMessage(actionLabel) {
+    return `You are offline. Unable to ${actionLabel} while the server is unreachable.`;
   }
 
   normalizeTaskId(taskId) {
@@ -191,8 +211,28 @@ class TaskAdapterClass {
     await this.init();
     try {
       if (this.shouldUseApi()) {
-        const data = await this.apiRequest('/tasks');
-        return Array.isArray(data.tasks) ? data.tasks.map((task) => this.fromApiTask(task)) : [];
+        try {
+          const data = await this.apiRequest('/tasks');
+          const mapped = Array.isArray(data.tasks) ? data.tasks.map((task) => this.fromApiTask(task)) : [];
+
+          if (IS_WEB) {
+            this.writeWebJson(API_TASK_CACHE_KEY, mapped);
+          }
+
+          this.lastReadOffline = false;
+          return mapped;
+        } catch (err) {
+          this.lastReadOffline = true;
+
+          if (IS_WEB) {
+            const cached = this.readWebJson(API_TASK_CACHE_KEY, null);
+            if (Array.isArray(cached)) {
+              return cached;
+            }
+          }
+
+          return [];
+        }
       }
 
       if (IS_WEB) {
@@ -224,11 +264,19 @@ class TaskAdapterClass {
     await this.init();
     try {
       if (this.shouldUseApi()) {
-        const payload = this.toApiTaskPayload(task);
-        const data = await this.apiRequest('/tasks', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+        let data;
+        try {
+          const payload = this.toApiTaskPayload(task);
+          data = await this.apiRequest('/tasks', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+        } catch (err) {
+          if (this.isOfflineError(err)) {
+            throw new Error(this.buildOfflineWriteErrorMessage('add tasks'));
+          }
+          throw err;
+        }
 
         const mapped = this.fromApiTask(data.task);
         task.id = mapped.id;
@@ -256,12 +304,19 @@ class TaskAdapterClass {
     await this.init();
     try {
       if (this.shouldUseApi()) {
-        const taskId = this.normalizeTaskId(task.id);
-        const payload = this.toApiTaskPayload(task);
-        await this.apiRequest(`/tasks/${taskId}`, {
-          method: 'PATCH',
-          body: JSON.stringify(payload),
-        });
+        try {
+          const taskId = this.normalizeTaskId(task.id);
+          const payload = this.toApiTaskPayload(task);
+          await this.apiRequest(`/tasks/${taskId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload),
+          });
+        } catch (err) {
+          if (this.isOfflineError(err)) {
+            throw new Error(this.buildOfflineWriteErrorMessage('update tasks'));
+          }
+          throw err;
+        }
         return;
       }
 
@@ -281,10 +336,17 @@ class TaskAdapterClass {
     await this.init();
     try {
       if (this.shouldUseApi()) {
-        const normalizedId = this.normalizeTaskId(taskId);
-        await this.apiRequest(`/tasks/${normalizedId}`, {
-          method: 'DELETE',
-        });
+        try {
+          const normalizedId = this.normalizeTaskId(taskId);
+          await this.apiRequest(`/tasks/${normalizedId}`, {
+            method: 'DELETE',
+          });
+        } catch (err) {
+          if (this.isOfflineError(err)) {
+            throw new Error(this.buildOfflineWriteErrorMessage('delete tasks'));
+          }
+          throw err;
+        }
         return;
       }
 
@@ -301,10 +363,17 @@ class TaskAdapterClass {
     await this.init();
     try {
       if (this.shouldUseApi()) {
-        const normalizedId = this.normalizeTaskId(taskId);
-        await this.apiRequest(`/tasks/${normalizedId}/done`, {
-          method: 'PATCH',
-        });
+        try {
+          const normalizedId = this.normalizeTaskId(taskId);
+          await this.apiRequest(`/tasks/${normalizedId}/done`, {
+            method: 'PATCH',
+          });
+        } catch (err) {
+          if (this.isOfflineError(err)) {
+            throw new Error(this.buildOfflineWriteErrorMessage('complete tasks'));
+          }
+          throw err;
+        }
         return;
       }
 
@@ -523,9 +592,16 @@ class TaskAdapterClass {
   async restoreFromBackup(backupFileName) {
     try {
       if (this.shouldUseApi()) {
-        await this.apiRequest(`/backups/${encodeURIComponent(backupFileName)}/restore`, {
-          method: 'POST',
-        });
+        try {
+          await this.apiRequest(`/backups/${encodeURIComponent(backupFileName)}/restore`, {
+            method: 'POST',
+          });
+        } catch (err) {
+          if (this.isOfflineError(err)) {
+            throw new Error(this.buildOfflineWriteErrorMessage('restore backups'));
+          }
+          throw err;
+        }
         return;
       }
 
